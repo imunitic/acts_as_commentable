@@ -1,0 +1,66 @@
+ActsAsCommentable
+=================
+
+ActsAsCommentable is an acts_as plugin that is used to enable commenting on your ActiveRecord models. The plugin is intentionally simple because I wanted this plugin to be as customizable as possible without the user ever touching the plugins code.
+
+
+Example
+=======
+
+In the model you want to be commentable add acts_as_commentable
+
+class Post < ActiveRecord::Base
+    acts_as_commentable
+    # or if you waint to add some methods to the comments association
+    # acts_as_commentable do
+    #     def find_by_date(date, options = {})
+    #         with_scope :find => optons do
+    #             # CODE GOES HERE
+    #         end
+    #     end
+    # end
+    ...
+end
+
+Create the comments table. The only requirement are the commentable_type and commentable_id fields.
+For example:
+
+create_table :comments, :force => true do |t|
+    t.column :author,           :string
+    t.column :coment,           :text
+    t.column :commentable_type, :string
+    t.column :commentable_id,   :integer
+    t.column :created_at,       :datetime
+end
+
+If you want to add methods to the comment model you can do this using mixins.
+For example:
+
+module Mixins; module Comment; end; end;
+module Mixins::Comment::Spamable
+  def self.included(base)
+    base.extend(ClassMethods)
+  end
+
+  module ClassMethods
+    def count_by_spam(spam)
+      count :all, :conditions => ['is_spam = ?', spam]
+    end
+
+    def count_by_spam_and_commentable(spam, type, id)
+      count :all, :conditions => ['is_spam = ? and 
+           commentable_type = ? and commentable_id = ?', 
+               spam, type, id]
+    end
+  end
+end
+
+Comment.send :include, Mixins::Comment::Spamable
+# If you want to add validation you can do this like so:
+Comment.send(:validates_presence_of, :author_name, :comment)
+
+And that is it.
+
+Enjoy!
+
+Copyright (c) 2007 Ivica Munitic <ivica@munitic.com.hr>, released under the MIT license
